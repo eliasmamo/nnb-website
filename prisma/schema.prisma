@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model RoomType {
+  id           String    @id @default(cuid())
+  name         String
+  description  String?
+  basePrice    Decimal   @map("base_price") @db.Decimal(10, 2)
+  maxOccupancy Int       @map("max_occupancy")
+  totalUnits   Int       @map("total_units")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  
+  rooms        Room[]
+  bookings     Booking[]
+
+  @@map("room_types")
+}
+
+model Room {
+  id           String    @id @default(cuid())
+  roomNumber   String    @unique @map("room_number")
+  roomTypeId   String    @map("room_type_id")
+  ttlockLockId String?   @map("ttlock_lock_id")
+  isActive     Boolean   @default(true) @map("is_active")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+  
+  roomType     RoomType  @relation(fields: [roomTypeId], references: [id])
+  bookings     Booking[]
+  lockKeys     LockKey[]
+
+  @@map("rooms")
+}
+
+enum BookingStatus {
+  PENDING_CHECKIN
+  CONFIRMED
+  CHECKIN_COMPLETED
+  CHECKED_IN
+  CHECKED_OUT
+  CANCELLED
+}
+
+model Booking {
+  id             String         @id @default(cuid())
+  referenceCode  String         @unique @map("reference_code")
+  roomTypeId     String         @map("room_type_id")
+  roomId         String?        @map("room_id")
+  checkInDate    DateTime       @map("check_in_date") @db.Date
+  checkOutDate   DateTime       @map("check_out_date") @db.Date
+  status         BookingStatus  @default(PENDING_CHECKIN)
+  guestName      String         @map("guest_name")
+  guestEmail     String         @map("guest_email")
+  guestPhone     String?        @map("guest_phone")
+  basePrice      Decimal        @map("base_price") @db.Decimal(10, 2)
+  totalPrice     Decimal        @map("total_price") @db.Decimal(10, 2)
+  locale         String         @default("en")
+  createdAt      DateTime       @default(now()) @map("created_at")
+  updatedAt      DateTime       @updatedAt @map("updated_at")
+  
+  roomType       RoomType       @relation(fields: [roomTypeId], references: [id])
+  room           Room?          @relation(fields: [roomId], references: [id])
+  checkInInfo    CheckInInfo?
+  lockKeys       LockKey[]
+  communications CommunicationLog[]
+
+  @@map("bookings")
+}
+
+model CheckInInfo {
+  id              String    @id @default(cuid())
+  bookingId       String    @unique @map("booking_id")
+  legalName       String    @map("legal_name")
+  dateOfBirth     DateTime  @map("date_of_birth") @db.Date
+  passportNumber  String    @map("passport_number")
+  nationality     String
+  address         String?
+  additionalServices Json?  @map("additional_services")
+  completedAt     DateTime  @default(now()) @map("completed_at")
+  
+  booking         Booking   @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("check_in_info")
+}
+
+model AdditionalService {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  price       Decimal   @db.Decimal(10, 2)
+  isActive    Boolean   @default(true) @map("is_active")
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+
+  @@map("additional_services")
+}
+
+enum LockKeyStatus {
+  ACTIVE
+  EXPIRED
+  REVOKED
+}
+
+model LockKey {
+  id            String        @id @default(cuid())
+  bookingId     String        @map("booking_id")
+  roomId        String        @map("room_id")
+  ttlockLockId  String        @map("ttlock_lock_id")
+  pinCode       String?       @map("pin_code")
+  validFrom     DateTime      @map("valid_from")
+  validTo       DateTime      @map("valid_to")
+  status        LockKeyStatus @default(ACTIVE)
+  remoteId      String?       @map("remote_id")
+  createdAt     DateTime      @default(now()) @map("created_at")
+  updatedAt     DateTime      @updatedAt @map("updated_at")
+  
+  booking       Booking       @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+  room          Room          @relation(fields: [roomId], references: [id])
+
+  @@map("lock_keys")
+}
+
+enum CommunicationChannel {
+  EMAIL
+  WHATSAPP
+}
+
+enum CommunicationType {
+  BOOKING_CONFIRMATION
+  CHECKIN_REMINDER
+  CHECKIN_COMPLETED
+  CHECKOUT_REMINDER
+}
+
+enum CommunicationStatus {
+  SENT
+  FAILED
+}
+
+model CommunicationLog {
+  id                String              @id @default(cuid())
+  bookingId         String              @map("booking_id")
+  channel           CommunicationChannel
+  type              CommunicationType
+  recipient         String
+  status            CommunicationStatus
+  payload           Json
+  providerMessageId String?             @map("provider_message_id")
+  errorMessage      String?             @map("error_message")
+  createdAt         DateTime            @default(now()) @map("created_at")
+  
+  booking           Booking             @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("communication_logs")
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String    @map("password_hash")
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("admin_users")
+}
