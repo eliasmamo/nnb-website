@@ -16,7 +16,7 @@ export default function Home() {
         
         <div className="text-center space-y-4">
           <h1 className="text-4xl md:text-6xl font-bold text-primary tracking-tight">
-            Launching Soon
+            Launching Very Soon
           </h1>
           <p className="text-lg md:text-xl text-muted-foreground max-w-md">
             A modern hotel management experience is on its way
