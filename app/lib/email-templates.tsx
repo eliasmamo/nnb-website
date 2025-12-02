@@ -96,7 +96,7 @@ export const BookingConfirmationEmail: React.FC<BookingConfirmationEmailProps> =
       <div className="content">
         <p>Dear {guestName},</p>
         
-        <p>Your booking has been successfully confirmed. We're excited to welcome you!</p>
+        <p>Your booking has been successfully confirmed. We&apos;re excited to welcome you!</p>
         
         <div className="reference-box">
           <p style={{ margin: '0 0 10px 0', fontSize: '14px', color: '#666' }}>Your Booking Reference</p>
@@ -129,9 +129,9 @@ export const BookingConfirmationEmail: React.FC<BookingConfirmationEmailProps> =
         </div>
         
         <div style={{ background: '#e8f5e9', padding: '15px', borderRadius: '6px', marginTop: '20px' }}>
-          <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>What's Next?</h4>
+          <h4 style={{ margin: '0 0 10px 0', color: '#2e7d32' }}>What&apos;s Next?</h4>
           <ul style={{ margin: 0, paddingLeft: '20px' }}>
-            <li>You'll receive check-in instructions 24 hours before arrival</li>
+            <li>You&apos;ll receive check-in instructions 24 hours before arrival</li>
             <li>Online check-in will be available from the link above</li>
             <li>Check-in time: After 2:00 PM</li>
             <li>Check-out time: Before 11:00 AM</li>

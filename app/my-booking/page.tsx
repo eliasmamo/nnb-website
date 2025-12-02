@@ -201,7 +201,7 @@ export default function MyBookingPage() {
               {booking.status === 'CHECKED_IN' && (
                 <div className="bg-blue-50 p-4 rounded-lg text-center">
                   <p className="text-sm text-blue-800">
-                    You're checked in! Enjoy your stay at N&B Hotel.
+                    You&apos;re checked in! Enjoy your stay at N&B Hotel.
                   </p>
                 </div>
               )}
