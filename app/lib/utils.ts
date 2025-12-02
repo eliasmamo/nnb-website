@@ -15,14 +15,14 @@ export function generateBookingReference(): string {
 }
 
 export function formatCurrency(amount: number, currency: string = 'USD'): string {
-  return new Intl.NumberFormat('en-US', {
+  return new (globalThis.Intl.NumberFormat)('en-US', {
     style: 'currency',
     currency,
   }).format(amount);
 }
 
 export function formatDate(date: Date): string {
-  return new Intl.DateFormat('en-US', {
+  return new (globalThis.Intl.DateTimeFormat)('en-US', {
     year: 'numeric',
     month: 'long',
     day: 'numeric',

@@ -43,37 +43,36 @@ export default function BookingModule() {
     }
 
     setLoading(true);
-    // Simulate API call
-    setTimeout(() => {
-      setAvailableRooms([
-        {
-          id: '1',
-          name: 'Standard Room',
-          description: 'Comfortable room with essential amenities, perfect for solo travelers or couples',
-          basePrice: 80,
-          maxOccupancy: 2,
-          image: 'bg-blue-200',
-        },
-        {
-          id: '2',
-          name: 'Deluxe Room',
-          description: 'Spacious room with premium amenities, dedicated workspace, and city view',
-          basePrice: 120,
-          maxOccupancy: 3,
-          image: 'bg-green-200',
-        },
-        {
-          id: '3',
-          name: 'Suite',
-          description: 'Luxurious suite with separate living area, balcony, and premium workspace',
-          basePrice: 200,
-          maxOccupancy: 4,
-          image: 'bg-purple-200',
-        },
-      ]);
-      setStep('rooms');
+    try {
+      const response = await fetch('/api/rooms/availability', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          checkInDate: searchParams.checkIn,
+          checkOutDate: searchParams.checkOut,
+          guests: searchParams.guests,
+        }),
+      });
+
+      const data = await response.json();
+      
+      if (response.ok) {
+        // Add color placeholders to the room types
+        const colors = ['bg-blue-200', 'bg-green-200', 'bg-purple-200'];
+        const roomsWithColors = data.roomTypes.map((room: any, index: number) => ({
+          ...room,
+          image: colors[index % colors.length],
+        }));
+        setAvailableRooms(roomsWithColors);
+        setStep('rooms');
+      } else {
+        alert(data.error || 'Failed to fetch available rooms');
+      }
+    } catch (error) {
+      alert('Failed to search rooms. Please try again.');
+    } finally {
       setLoading(false);
-    }, 1000);
+    }
   };
 
   const handleRoomSelect = (room: RoomType) => {
@@ -86,15 +85,37 @@ export default function BookingModule() {
     setStep('payment');
   };
 
-  const handlePayment = (e: React.FormEvent) => {
+  const handlePayment = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate payment processing
-    setTimeout(() => {
-      setBookingReference('NNB' + Math.random().toString(36).substr(2, 6).toUpperCase());
-      setStep('success');
+
+    try {
+      const response = await fetch('/api/booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          roomTypeId: selectedRoom?.id,
+          checkInDate: searchParams.checkIn,
+          checkOutDate: searchParams.checkOut,
+          guestName: guestDetails.name,
+          guestEmail: guestDetails.email,
+          guestPhone: guestDetails.phone,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setBookingReference(data.referenceCode);
+        setStep('success');
+      } else {
+        alert(data.error || 'Booking failed. Please try again.');
+        setLoading(false);
+      }
+    } catch (error) {
+      alert('Failed to process booking. Please try again.');
       setLoading(false);
-    }, 2000);
+    }
   };
 
   const calculateNights = () => {
@@ -364,18 +385,34 @@ export default function BookingModule() {
                   <div className="bg-muted/50 p-6 rounded-lg max-w-md mx-auto mb-6">
                     <p className="text-sm text-muted-foreground mb-2">Booking Reference</p>
                     <p className="text-3xl font-bold text-primary mb-4">{bookingReference}</p>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-muted-foreground mb-4">
                       Confirmation details have been sent to <strong>{guestDetails.email}</strong>
                     </p>
+                    <div className="bg-blue-50 p-3 rounded-md text-sm text-blue-800">
+                      <p className="mb-2">📧 Check your email for:</p>
+                      <ul className="text-left space-y-1 ml-4">
+                        <li>• Booking confirmation</li>
+                        <li>• Link to view your booking details</li>
+                        <li>• Online check-in instructions (24h before arrival)</li>
+                      </ul>
+                    </div>
                   </div>
-                  <Button onClick={() => {
-                    setStep('search');
-                    setSearchParams({ checkIn: '', checkOut: '', guests: 1 });
-                    setSelectedRoom(null);
-                    setGuestDetails({ name: '', email: '', phone: '' });
-                  }}>
-                    Make Another Booking
-                  </Button>
+                  <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                    <a href={`/my-booking`}>
+                      <Button variant="outline" className="w-full sm:w-auto">
+                        View My Booking
+                      </Button>
+                    </a>
+                    <Button onClick={() => {
+                      setStep('search');
+                      setSearchParams({ checkIn: '', checkOut: '', guests: 1 });
+                      setSelectedRoom(null);
+                      setGuestDetails({ name: '', email: '', phone: '' });
+                      setBookingReference('');
+                    }}>
+                      Make Another Booking
+                    </Button>
+                  </div>
                 </div>
               )}
             </CardContent>

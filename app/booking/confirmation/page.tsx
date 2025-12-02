@@ -140,10 +140,10 @@ export default function ConfirmationPage() {
 
             {/* Next Steps */}
             <div className="bg-muted/50 p-4 rounded-lg">
-              <h3 className="font-semibold mb-2">What's Next?</h3>
+              <h3 className="font-semibold mb-2">What&apos;s Next?</h3>
               <ul className="text-sm space-y-1 text-muted-foreground">
                 <li>✓ Confirmation email sent to {booking.guestEmail}</li>
-                <li>✓ You'll receive check-in instructions 24 hours before arrival</li>
+                <li>✓ You&apos;ll receive check-in instructions 24 hours before arrival</li>
                 <li>✓ Save your reference code: <strong className="text-foreground">{booking.referenceCode}</strong></li>
               </ul>
             </div>
