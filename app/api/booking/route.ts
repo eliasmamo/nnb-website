@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { generateBookingReference } from '@/lib/utils';
+import { sendBookingConfirmation } from '@/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -80,28 +81,43 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Log communication (email/WhatsApp will be sent in production)
+    // Send booking confirmation email
+    const emailResult = await sendBookingConfirmation({
+      to: guestEmail,
+      guestName,
+      referenceCode: booking.referenceCode,
+      roomType: booking.roomType.name,
+      checkInDate: checkIn,
+      checkOutDate: checkOut,
+      totalPrice,
+    });
+
+    // Log communication
     await prisma.communicationLog.create({
       data: {
         bookingId: booking.id,
         channel: 'EMAIL',
         type: 'BOOKING_CONFIRMATION',
         recipient: guestEmail,
-        status: 'SENT',
+        status: emailResult.success ? 'SENT' : 'FAILED',
         payload: {
-          subject: 'Booking Confirmation - N&B Hotel',
-          message: `Your booking is confirmed! Reference: ${booking.referenceCode}`,
+          subject: `Booking Confirmation - ${booking.referenceCode}`,
+          messageId: emailResult.messageId,
           bookingLink: `${process.env.APP_BASE_URL}/my-booking`,
           referenceCode: booking.referenceCode,
         },
+        providerMessageId: emailResult.messageId || null,
+        errorMessage: emailResult.error ? JSON.stringify(emailResult.error) : null,
       },
     });
 
-    console.log('📧 Booking confirmation email logged for:', guestEmail);
-    console.log('🔗 Booking details link:', `${process.env.APP_BASE_URL}/my-booking`);
+    if (emailResult.success) {
+      console.log('✅ Booking confirmation email sent to:', guestEmail);
+    } else {
+      console.error('❌ Failed to send email:', emailResult.error);
+    }
     
-    // [Inference] In production, actual email would be sent here via email service
-    // [Inference] WhatsApp notification would also be sent if phone number provided
+    // [Inference] WhatsApp notification would be sent here if phone number provided
 
     return NextResponse.json({
       success: true,
