@@ -53,6 +53,9 @@ export default function CheckInPage() {
           setStep('success');
         } else if (data.booking.status !== 'PENDING_CHECKIN') {
           setError('This booking is not eligible for check-in');
+        } else {
+          // Booking is valid, proceed to details step
+          setStep('details');
         }
       } else {
         setError(data.error || 'Booking not found');

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { issueLockKey } from '@/app/lib/lock-key-service';
+import { sendCheckInCompleted } from '@/app/lib/email';
 
 export async function POST(request: NextRequest) {
   try {
@@ -58,12 +60,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Update booking with room assignment and status
+    // Update booking with room assignment and status to CHECKIN_COMPLETED
     const updatedBooking = await prisma.booking.update({
       where: { id: booking.id },
       data: {
         roomId: availableRoom.id,
-        status: 'CHECKED_IN',
+        status: 'CHECKIN_COMPLETED',
       },
       include: {
         room: true,
@@ -88,28 +90,78 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    // Log communication for check-in confirmation
-    await prisma.communicationLog.create({
-      data: {
-        bookingId: booking.id,
-        channel: 'EMAIL',
-        type: 'CHECKIN_COMPLETED',
-        recipient: booking.guestEmail,
-        status: 'SENT',
-        payload: {
-          roomNumber: availableRoom.roomNumber,
+    // Issue lock key for the room
+    let lockKeyInfo = null;
+    try {
+      const lockKeyResult = await issueLockKey(booking.id);
+      if (lockKeyResult.success && lockKeyResult.lockKey) {
+        lockKeyInfo = lockKeyResult.lockKey;
+        console.log('🔑 Lock key issued:', lockKeyInfo.pinCode);
+      } else {
+        console.warn('⚠️ Failed to issue lock key:', lockKeyResult.error);
+      }
+    } catch (error) {
+      console.error('❌ Error issuing lock key:', error);
+      // Don't fail the check-in if lock key issuance fails
+    }
+
+    // Send check-in completion email with PIN code
+    if (lockKeyInfo) {
+      try {
+        await sendCheckInCompleted({
+          to: booking.guestEmail,
+          guestName: booking.guestName,
           referenceCode: booking.referenceCode,
-        },
-      },
-    });
+          roomNumber: availableRoom.roomNumber,
+          pinCode: lockKeyInfo.pinCode,
+          checkInDate: booking.checkInDate,
+          checkOutDate: booking.checkOutDate,
+        });
+
+        // Log successful email
+        await prisma.communicationLog.create({
+          data: {
+            bookingId: booking.id,
+            channel: 'EMAIL',
+            type: 'CHECKIN_COMPLETED',
+            recipient: booking.guestEmail,
+            status: 'SENT',
+            payload: {
+              roomNumber: availableRoom.roomNumber,
+              referenceCode: booking.referenceCode,
+              pinCode: lockKeyInfo.pinCode,
+            },
+          },
+        });
+      } catch (emailError) {
+        console.error('Failed to send check-in email:', emailError);
+        // Log failed email but don't fail the check-in
+        await prisma.communicationLog.create({
+          data: {
+            bookingId: booking.id,
+            channel: 'EMAIL',
+            type: 'CHECKIN_COMPLETED',
+            recipient: booking.guestEmail,
+            status: 'FAILED',
+            payload: {
+              error: emailError instanceof Error ? emailError.message : 'Unknown error',
+            },
+          },
+        });
+      }
+    }
 
     console.log('✅ Check-in completed for booking:', referenceCode);
     console.log('📍 Room assigned:', availableRoom.roomNumber);
+    if (lockKeyInfo) {
+      console.log('🔑 PIN code:', lockKeyInfo.pinCode);
+    }
 
     return NextResponse.json({
       success: true,
       booking: updatedBooking,
       room: availableRoom,
+      lockKey: lockKeyInfo,
     });
   } catch (error) {
     console.error('Check-in error:', error);

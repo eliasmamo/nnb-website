@@ -46,11 +46,14 @@ export default function MyBookingPage() {
 
   const canCheckIn = () => {
     if (!booking) return false;
-    const now = new Date();
-    const checkInDate = new Date(booking.checkInDate);
-    const dayBefore = new Date(checkInDate);
-    dayBefore.setDate(dayBefore.getDate() - 1);
-    return now >= dayBefore && booking.status === 'PENDING_CHECKIN';
+    // For testing: allow check-in anytime if status is PENDING_CHECKIN
+    // In production, uncomment the date check below:
+    // const now = new Date();
+    // const checkInDate = new Date(booking.checkInDate);
+    // const dayBefore = new Date(checkInDate);
+    // dayBefore.setDate(dayBefore.getDate() - 1);
+    // return now >= dayBefore && booking.status === 'PENDING_CHECKIN';
+    return booking.status === 'PENDING_CHECKIN';
   };
 
   return (
