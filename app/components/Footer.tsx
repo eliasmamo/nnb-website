@@ -24,7 +24,7 @@ export default function Footer() {
               </div>
             </div>
             <p className="text-sm text-neutral-400">
-              Modern accommodation designed for digital nomads and remote workers.
+              Modern accommodation designed for digital nomads and remote workers!
             </p>
           </div>
 
