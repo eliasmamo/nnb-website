@@ -210,6 +210,46 @@ class TTLockClient {
   }
 
   /**
+   * Unlock a lock remotely
+   */
+  async unlockLock(lockId: string): Promise<{ success: boolean }> {
+    try {
+      await this.apiRequest('/v3/lock/unlock', {
+        lockId,
+      }, 'POST');
+      return { success: true };
+    } catch (error) {
+      console.error('Failed to unlock:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Send eKey to user's TTLock app
+   * This allows them to unlock via the mobile app
+   */
+  async sendEKey(params: {
+    lockId: string;
+    receiverUsername: string; // Guest's email
+    startDate: number; // Timestamp in milliseconds
+    endDate: number; // Timestamp in milliseconds
+    remarks?: string;
+  }): Promise<{ keyId: number }> {
+    const response = await this.apiRequest<{ keyId: number }>(
+      '/v3/key/send',
+      {
+        lockId: params.lockId,
+        receiverUsername: params.receiverUsername,
+        startDate: params.startDate.toString(),
+        endDate: params.endDate.toString(),
+        remarks: params.remarks || 'Hotel Room Access',
+      },
+      'POST'
+    );
+    return response;
+  }
+
+  /**
    * List all locks for the account
    */
   async listLocks(): Promise<any[]> {

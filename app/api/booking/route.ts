@@ -28,7 +28,15 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (checkIn < new Date()) {
+    // Allow same-day bookings (late check-in)
+    // Only prevent bookings from previous days
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Start of today
+    
+    const checkInDateOnly = new Date(checkIn);
+    checkInDateOnly.setHours(0, 0, 0, 0);
+
+    if (checkInDateOnly < today) {
       return NextResponse.json(
         { error: 'Check-in date cannot be in the past' },
         { status: 400 }

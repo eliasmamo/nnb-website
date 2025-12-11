@@ -107,6 +107,7 @@ interface SendCheckInCompletedParams {
   pinCode: string;
   checkInDate: Date;
   checkOutDate: Date;
+  guestPortalLink?: string;
 }
 
 function generateCheckInEmailHTML(params: {
@@ -116,6 +117,7 @@ function generateCheckInEmailHTML(params: {
   pinCode: string;
   checkInDate: string;
   checkOutDate: string;
+  guestPortalLink?: string;
 }): string {
   return `
 <!DOCTYPE html>
@@ -161,6 +163,15 @@ function generateCheckInEmailHTML(params: {
       </ol>
     </div>
     
+    ${params.guestPortalLink ? `
+    <div style="text-align: center; margin: 30px 0;">
+      <a href="${params.guestPortalLink}" style="display: inline-block; background: linear-gradient(135deg, #9c9b77 0%, #7a7960 100%); color: white; padding: 16px 32px; text-decoration: none; border-radius: 8px; font-weight: bold; font-size: 16px;">
+        🔐 View Your Guest Portal
+      </a>
+      <p style="margin-top: 10px; font-size: 12px; color: #666;">Access your room details, PIN code, and more anytime</p>
+    </div>
+    ` : ''}
+    
     <div style="background: #fff3e0; padding: 15px; border-radius: 6px; margin-top: 20px;">
       <h4 style="margin: 0 0 10px 0; color: #e65100;">📱 Alternative Access</h4>
       <p style="margin: 0;">You can also use the TTLock mobile app to unlock your door remotely.</p>
@@ -200,6 +211,7 @@ export async function sendCheckInCompleted(params: SendCheckInCompletedParams) {
       pinCode: params.pinCode,
       checkInDate: formatDate(params.checkInDate),
       checkOutDate: formatDate(params.checkOutDate),
+      guestPortalLink: params.guestPortalLink,
     });
     
     const fromEmail = process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev';

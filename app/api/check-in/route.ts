@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { issueLockKey } from '@/app/lib/lock-key-service';
 import { sendCheckInCompleted } from '@/app/lib/email';
+import { createGuestSession } from '@/app/lib/guest-auth';
+import { getTTLockClient } from '@/app/lib/ttlock';
 
 export async function POST(request: NextRequest) {
   try {
@@ -108,6 +110,27 @@ export async function POST(request: NextRequest) {
     // Send check-in completion email with PIN code
     if (lockKeyInfo) {
       try {
+        // Generate magic link for guest portal
+        const guestPortalLink = await createGuestSession(booking.id);
+
+        // Send eKey to guest's TTLock app (non-blocking)
+        if (availableRoom.ttlockLockId) {
+          try {
+            const ttlock = getTTLockClient();
+            await ttlock.sendEKey({
+              lockId: availableRoom.ttlockLockId,
+              receiverUsername: booking.guestEmail,
+              startDate: lockKeyInfo.validFrom.getTime(),
+              endDate: lockKeyInfo.validTo.getTime(),
+              remarks: `Room ${availableRoom.roomNumber} - ${booking.guestName}`,
+            });
+            console.log('✅ eKey sent to guest TTLock app');
+          } catch (ekeyError) {
+            console.warn('⚠️ Failed to send eKey (non-critical):', ekeyError);
+            // Don't fail check-in if eKey fails - guest can request it later
+          }
+        }
+
         await sendCheckInCompleted({
           to: booking.guestEmail,
           guestName: booking.guestName,
@@ -116,6 +139,7 @@ export async function POST(request: NextRequest) {
           pinCode: lockKeyInfo.pinCode,
           checkInDate: booking.checkInDate,
           checkOutDate: booking.checkOutDate,
+          guestPortalLink,
         });
 
         // Log successful email
