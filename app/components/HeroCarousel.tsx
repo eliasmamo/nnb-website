@@ -20,6 +20,11 @@ const slides = [
     title: 'City Center Location',
     subtitle: 'Everything you need within reach',
   },
+  {
+    image: '/hotel/exterior-4.jpg',
+    title: 'Comfort & Convenience',
+    subtitle: 'Your home away from home',
+  },
 ];
 
 export default function HeroCarousel() {
@@ -35,7 +40,7 @@ export default function HeroCarousel() {
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % slides.length);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length);
 
-  const bgColors = ['bg-primary/20', 'bg-primary/30', 'bg-primary/40'];
+  const bgColors = ['bg-primary/20', 'bg-primary/30', 'bg-primary/40', 'bg-primary/25'];
 
   return (
     <div className="relative h-[500px] md:h-[600px] overflow-hidden bg-gray-900">
@@ -46,6 +51,13 @@ export default function HeroCarousel() {
             index === currentSlide ? 'opacity-100' : 'opacity-0'
           }`}
         >
+          <Image
+            src={slide.image}
+            alt={slide.title}
+            fill
+            className="object-cover"
+            priority={index === 0}
+          />
           <div className={`absolute inset-0 ${bgColors[index]}`} />
           <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-black/50" />
           <div className="absolute inset-0 flex items-center justify-center text-center">
